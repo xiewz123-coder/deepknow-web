@@ -2,7 +2,7 @@
 // 从环境变量读取配置，确保生产环境安全
 
 function getEnvVar(name: string, defaultValue?: string): string {
-  const value = process.env[name] || defaultValue || ''
+  const value = process.env[name]?.trim() || defaultValue || ''
   if (!value && process.env.NODE_ENV === 'production') {
     console.warn(`Missing environment variable: ${name}`)
   }
