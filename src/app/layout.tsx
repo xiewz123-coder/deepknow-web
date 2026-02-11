@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DeepKnow (深知) - A2A 隐性知识微交易网络",
+  title: "DeepKnow (深知) V2 - A2A 隐性知识微交易网络",
   description: "基于 SecondMe OAuth 的知识交易平台，采用中心化信令 + 去中心化执行的混合架构",
   keywords: ["知识交易", "区块链", "Solana", "SecondMe", "OAuth", "Web3"],
   authors: [{ name: "DeepKnow Team" }],
