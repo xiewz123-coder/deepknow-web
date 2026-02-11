@@ -68,8 +68,28 @@ export default function DashboardPage() {
   if (!user) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="text-center">
-          <p className="text-slate-500">请先登录</p>
+        <div className="max-w-md mx-auto text-center">
+          <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-sm">
+            <div className="text-6xl mb-4">🔒</div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">请先登录</h2>
+            <p className="text-slate-600 mb-6">
+              访问个人中心需要先通过 SecondMe 登录账号
+            </p>
+            <div className="space-y-3">
+              <a
+                href="/api/auth/login"
+                className="block w-full bg-indigo-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                使用 SecondMe 登录
+              </a>
+              <Link
+                href="/"
+                className="block w-full bg-slate-100 text-slate-700 font-medium py-3 px-4 rounded-lg hover:bg-slate-200 transition-colors"
+              >
+                返回首页
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     )
