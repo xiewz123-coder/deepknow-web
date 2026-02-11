@@ -1,0 +1,54 @@
+// DeepKnow Prisma Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  secondmeId    String    @unique
+  email         String?
+  name          String?
+  avatar        String?
+  shades        String?   // SecondMe user shades JSON
+  accessToken   String?   // SecondMe OAuth access token
+  refreshToken  String?   // SecondMe OAuth refresh token
+  tokenExpires  DateTime? // Token expiration time
+  reputation    Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  knowledgeItems KnowledgeItem[]
+  transactions   Transaction[]
+}
+
+model KnowledgeItem {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  tags        String   // JSON array of tags
+  price       Float    @default(0)
+  status      String   @default("active") // active, sold, withdrawn
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  txHash      String?  // Solana transaction hash
+  amount      Float
+  status      String   @default("pending") // pending, confirmed, failed
+  seekerId    String
+  seeker      User     @relation(fields: [seekerId], references: [id])
+  providerId  String?
+  knowledgeId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

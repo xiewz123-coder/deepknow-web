@@ -1,0 +1,59 @@
+{
+  "version": "1.0.0",
+  "stage": "ready",
+  "app": {
+    "name": "T小喆应用平台",
+    "description": "DeepKnow (深知) - A2A 隐性知识微交易网络"
+  },
+  "api": {
+    "clientId": "fe1b2ed3-edd8-42e2-9f91-62f1fc0240d3",
+    "clientSecret": "c888a72c02e065d0924f9b3b5b1b63aae96afbcfff4773259a399b44b60d1bee",
+    "redirectUri": "http://localhost:3002/api/auth/callback",
+    "scopes": ["user.info", "user.info.shades", "chat"],
+    "authorizationEndpoint": "https://app.second.me/oauth/authorize",
+    "tokenEndpoint": "https://app.second.me/api/oauth/token",
+    "baseUrl": "https://app.second.me/api/"
+  },
+  "modules": {
+    "auth": {
+      "enabled": true,
+      "description": "SecondMe OAuth 登录集成"
+    },
+    "profile": {
+      "enabled": true,
+      "description": "用户 Shades 画像展示"
+    },
+    "chat": {
+      "enabled": true,
+      "description": "与 SecondMe AI 对话"
+    }
+  },
+  "database": {
+    "type": "sqlite",
+    "url": "file:./dev.db"
+  },
+  "prd": {
+    "projectName": "DeepKnow (深知)",
+    "description": "A2A 隐性知识微交易网络平台 - 展示系统架构、协议流程、知识交易和用户仪表盘",
+    "targetUsers": "知识提供者和需求者",
+    "coreFeatures": [
+      "系统架构可视化（4节点交互图）",
+      "协议流程演示（3步骤通信协议）",
+      "知识交易市场",
+      "用户仪表盘"
+    ],
+    "homepage": "知识交易市场",
+    "design": {
+      "theme": "light",
+      "style": "简约优雅",
+      "language": "中文",
+      "colors": {
+        "primary": "#4f46e5",
+        "secondary": "#10b981",
+        "background": "#f8fafc"
+      }
+    }
+  },
+  "createdAt": "2025-02-10T18:30:00Z",
+  "updatedAt": "2025-02-10T18:35:00Z"
+}
