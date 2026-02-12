@@ -27,10 +27,28 @@ const mockMyKnowledge = [
   { id: 'k2', title: 'LLM Prompt Engineering 进阶', price: 1.5, sales: 28, status: 'active' },
 ]
 
+// 通知渠道类型
+interface NotificationChannel {
+  id: string
+  type: 'email' | 'sms' | 'webhook' | 'inApp'
+  name: string
+  icon: string
+  enabled: boolean
+  config?: Record<string, string>
+}
+
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+  const [showWebhookModal, setShowWebhookModal] = useState(false)
+  const [webhookUrl, setWebhookUrl] = useState('')
+  const [webhookSecret, setWebhookSecret] = useState('')
+  const [notificationChannels, setNotificationChannels] = useState<NotificationChannel[]>([
+    { id: '1', type: 'email', name: '邮件通知', icon: '📧', enabled: true, config: { email: 'user@example.com' } },
+    { id: '2', type: 'inApp', name: '站内信', icon: '🔔', enabled: true },
+    { id: '3', type: 'webhook', name: 'WebHook', icon: '⚡', enabled: false, config: { url: '', secret: '' } },
+  ])
   const router = useRouter()
 
   useEffect(() => {
@@ -44,7 +62,6 @@ export default function DashboardPage() {
         const data = await res.json()
         setUser(data)
       } else {
-        // Not logged in, redirect to home
         router.push('/')
       }
     } catch (error) {
@@ -53,6 +70,21 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const toggleChannel = (channelId: string) => {
+    setNotificationChannels(prev => prev.map(ch =>
+      ch.id === channelId ? { ...ch, enabled: !ch.enabled } : ch
+    ))
+  }
+
+  const saveWebhook = () => {
+    setNotificationChannels(prev => prev.map(ch =>
+      ch.type === 'webhook'
+        ? { ...ch, enabled: true, config: { url: webhookUrl, secret: webhookSecret } }
+        : ch
+    ))
+    setShowWebhookModal(false)
   }
 
   if (loading) {
@@ -125,6 +157,14 @@ export default function DashboardPage() {
               <span className="text-slate-600">注册时间: {new Date(user.createdAt).toLocaleDateString('zh-CN')}</span>
             </div>
           </div>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium flex items-center gap-1">
+              <span>✅</span> 已认证
+            </span>
+            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-1">
+              <span>🔒</span> 加密保护
+            </span>
+          </div>
         </div>
       </div>
 
@@ -155,6 +195,7 @@ export default function DashboardPage() {
             { id: 'overview', label: '概览' },
             { id: 'knowledge', label: '我的知识' },
             { id: 'transactions', label: '交易记录' },
+            { id: 'notifications', label: '消息推送' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -215,7 +256,6 @@ export default function DashboardPage() {
 
       {activeTab === 'knowledge' && (
         <div className="space-y-8">
-          {/* 已购买的知识 */}
           <div>
             <h3 className="text-lg font-semibold text-slate-800 mb-4">已购买的知识</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -260,7 +300,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* 我发布的知识 */}
           <div>
             <h3 className="text-lg font-semibold text-slate-800 mb-4">我发布的知识</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -323,6 +362,191 @@ export default function DashboardPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {activeTab === 'notifications' && (
+        <div className="space-y-6">
+          {/* A2A Push Notification Info */}
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 text-white">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-3xl">🔔</span>
+              <div>
+                <h3 className="text-lg font-bold">A2A Push Notification</h3>
+                <p className="text-indigo-100 text-sm">配置任务状态更新推送，实时接收交易提醒</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-4">
+              <span className="px-2 py-1 bg-white/20 rounded text-xs">交易提醒</span>
+              <span className="px-2 py-1 bg-white/20 rounded text-xs">匹配通知</span>
+              <span className="px-2 py-1 bg-white/20 rounded text-xs">订单状态</span>
+              <span className="px-2 py-1 bg-white/20 rounded text-xs">WebHook</span>
+            </div>
+          </div>
+
+          {/* Notification Channels */}
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">通知渠道</h3>
+              <p className="text-sm text-slate-500 mt-1">选择接收消息的方式</p>
+            </div>
+            <div className="divide-y divide-slate-200">
+              {notificationChannels.map(channel => (
+                <div key={channel.id} className="px-6 py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{channel.icon}</span>
+                    <div>
+                      <p className="font-medium text-slate-900">{channel.name}</p>
+                      {channel.config?.email && (
+                        <p className="text-xs text-slate-500">{channel.config.email}</p>
+                      )}
+                      {channel.config?.url && (
+                        <p className="text-xs text-slate-500 truncate max-w-xs">{channel.config.url}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {channel.type === 'webhook' && (
+                      <button
+                        onClick={() => setShowWebhookModal(true)}
+                        className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                      >
+                        配置
+                      </button>
+                    )}
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={channel.enabled}
+                        onChange={() => toggleChannel(channel.id)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Notification Events */}
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200">
+              <h3 className="text-lg font-bold text-slate-900">通知事件</h3>
+              <p className="text-sm text-slate-500 mt-1">选择要接收的通知类型</p>
+            </div>
+            <div className="divide-y divide-slate-200">
+              {[
+                { id: 'match', name: '匹配通知', desc: '当您的知识被匹配到需求方时', enabled: true },
+                { id: 'order', name: '订单状态变更', desc: '交易状态更新（支付、交付、完成）', enabled: true },
+                { id: 'payment', name: '支付提醒', desc: '收到新的付款或需要支付时', enabled: true },
+                { id: 'message', name: '站内消息', desc: '收到新的咨询或评价', enabled: false },
+                { id: 'system', name: '系统公告', desc: '平台更新、维护通知等', enabled: true },
+              ].map(event => (
+                <div key={event.id} className="px-6 py-4 flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-slate-900">{event.name}</p>
+                    <p className="text-xs text-slate-500">{event.desc}</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      defaultChecked={event.enabled}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* WebHook Documentation */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">WebHook 文档</h3>
+            <p className="text-sm text-slate-600 mb-4">
+              配置 WebHook URL 后，系统将在以下事件发生时向该地址发送 POST 请求：
+            </p>
+            <div className="bg-slate-900 rounded-lg overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
+                <span className="text-xs text-slate-400 font-mono">Payload Example</span>
+                <span className="text-xs text-emerald-400 font-mono">JSON</span>
+              </div>
+              <pre className="p-4 text-sm text-emerald-300 font-mono leading-relaxed overflow-x-auto">
+{`{
+  "event": "task.completed",
+  "timestamp": "2024-01-15T10:23:48Z",
+  "data": {
+    "taskId": "task-123",
+    "type": "knowledge_purchase",
+    "buyer": "seeker_456",
+    "seller": "provider_789",
+    "amount": 2.5,
+    "currency": "SOL",
+    "status": "completed"
+  },
+  "signature": "sha256=xxxxxxxxxxxxxxxx"
+}`}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WebHook Configuration Modal */}
+      {showWebhookModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-900">配置 WebHook</h3>
+              <button
+                onClick={() => setShowWebhookModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">WebHook URL</label>
+                <input
+                  type="url"
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                  placeholder="https://your-app.com/webhook"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+                <p className="text-xs text-slate-500 mt-1">接收推送通知的 HTTPS 地址</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Secret Key</label>
+                <input
+                  type="text"
+                  value={webhookSecret}
+                  onChange={(e) => setWebhookSecret(e.target.value)}
+                  placeholder="whsec_xxxxxxxxxxxxxxxx"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+                <p className="text-xs text-slate-500 mt-1">用于验证请求签名的密钥</p>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setShowWebhookModal(false)}
+                  className="flex-1 px-4 py-2 border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={saveWebhook}
+                  className="flex-1 px-4 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  保存
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
