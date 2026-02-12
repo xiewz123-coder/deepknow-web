@@ -51,6 +51,9 @@ export default function Navbar() {
           </div>
 
           <div className="hidden sm:flex sm:items-center sm:space-x-8">
+            <Link href="/agents" className="text-slate-600 hover:text-slate-900 font-medium">
+              代理发现
+            </Link>
             <Link href="/marketplace" className="text-slate-600 hover:text-slate-900 font-medium">
               知识市场
             </Link>
