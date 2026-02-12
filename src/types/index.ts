@@ -15,6 +15,33 @@ export interface UserShades {
   expertise: string[]
 }
 
+// 知识内容类型
+export type KnowledgeContentType =
+  | 'article'      // 文章
+  | 'video'        // 视频
+  | 'audio'        // 音频
+  | 'code'         // 代码示例
+  | 'consultation' // 咨询对话
+  | 'document'     // 文档
+  | 'interactive'  // 交互式组件
+  | 'dataset'      // 数据集
+
+// 知识预览信息
+export interface KnowledgePreview {
+  /** 预览类型 */
+  type: 'text' | 'image' | 'video' | 'audio' | 'iframe' | 'code'
+  /** 预览内容 */
+  content: string
+  /** 预览标题 */
+  title?: string
+  /** 预览时长（视频/音频） */
+  duration?: string
+  /** 文件大小 */
+  fileSize?: string
+  /** 代码语言 */
+  language?: string
+}
+
 // 知识项目类型
 export interface KnowledgeItem {
   id: string
@@ -29,6 +56,12 @@ export interface KnowledgeItem {
   rating: number
   createdAt: string
   status?: 'active' | 'inactive'
+  /** 内容类型 */
+  contentType: KnowledgeContentType
+  /** 预览信息 */
+  preview?: KnowledgePreview
+  /** 交互式预览URL */
+  interactiveUrl?: string
 }
 
 // 交易类型
