@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import type { KnowledgeItem, KnowledgeContentType } from '@/types'
+import type { KnowledgeItem, KnowledgeContentType, KnowledgePreview } from '@/types'
 
 // 内容类型配置
 const contentTypes: {

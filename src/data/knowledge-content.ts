@@ -2105,6 +2105,1374 @@ func main() {
     rating: 5.0,
     createdAt: '2024-02-14',
   },
+  {
+    id: '7',
+    title: 'React 性能优化交互式实验室',
+    description: '在线体验各种优化技巧的实际效果，包含 Profiler、DevTools 等工具使用',
+    content: `# React 性能优化交互式实验室
+
+> 从理论到实践，掌握 React 性能优化的核心技术
+
+---
+
+## 1. Profiler 工具深度使用
+
+### 1.1 解读火焰图
+
+React DevTools Profiler 的火焰图展示了组件的渲染时间：
+
+\`\`\`jsx
+import { Profiler } from 'react';
+
+function onRenderCallback(id, phase, actualDuration, baseDuration, startTime, commitTime) {
+  console.log('组件ID:', id);
+  console.log('阶段:', phase); // 'mount' | 'update'
+  console.log('实际渲染耗时:', actualDuration);
+  console.log('预计渲染耗时:', baseDuration);
+}
+
+<Profiler id="App" onRender={onRenderCallback}>
+  <App />
+</Profiler>
+\`\`\`
+
+**火焰图颜色含义：**
+- 🟢 绿色：快速渲染 (< 1ms)
+- 🟡 黄色：中等耗时 (1-10ms)
+- 🔴 红色：需要优化 (> 10ms)
+
+---
+
+## 2. 优化技巧实战
+
+### 2.1 useMemo 和 useCallback 的正确使用
+
+\`\`\`jsx
+// ❌ 错误：对所有内容都使用 useMemo
+const value = useMemo(() => a + b, [a, b]); // 简单计算不需要
+
+// ✅ 正确：用于复杂计算
+const expensiveValue = useMemo(() => {
+  return data.map(item => heavyComputation(item));
+}, [data]);
+
+// ✅ 正确：useCallback 用于子组件的回调
+const handleSubmit = useCallback((values) => {
+  api.submit(values);
+}, []); // 依赖为空时才可以省略
+\`\`\`
+
+### 2.2 React.memo 的适用场景
+
+\`\`\`jsx
+const ExpensiveComponent = React.memo(function MyComponent({ data, onUpdate }) {
+  // 只有 data 或 onUpdate 变化时才重新渲染
+  return <div>{/* 复杂渲染 */}</div>;
+}, (prevProps, nextProps) => {
+  // 自定义比较函数
+  return prevProps.id === nextProps.id;
+});
+\`\`\`
+
+### 2.3 虚拟列表实现
+
+\`\`\`jsx
+import { FixedSizeList } from 'react-window';
+
+function VirtualList({ items }) {
+  const Row = ({ index, style }) => (
+    <div style={style}>
+      {items[index].name}
+    </div>
+  );
+
+  return (
+    <FixedSizeList
+      height={500}
+      itemCount={items.length}
+      itemSize={50}
+      width="100%"
+    >
+      {Row}
+    </FixedSizeList>
+  );
+}
+// 渲染 10000 条数据，只渲染可视区域 ~15 个元素
+\`\`\`
+
+---
+
+## 3. 状态管理优化
+
+### 3.1 Context 性能陷阱
+
+\`\`\`jsx
+// ❌ 问题：任何状态变化都导致所有消费者重新渲染
+const AppContext = createContext();
+
+// ✅ 解决方案：拆分 Context
+const UserContext = createContext();
+const ThemeContext = createContext();
+const DataContext = createContext();
+
+// 或使用状态选择器
+function useUser() {
+  const context = useContext(UserContext);
+  return context.user; // 只返回需要的部分
+}
+\`\`\`
+
+### 3.2 Zustand 轻量级方案
+
+\`\`\`jsx
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+
+const useStore = create(devtools((set) => ({
+  bears: 0,
+  increasePopulation: () => set((state) => ({ bears: state.bears + 1 })),
+  removeAllBears: () => set({ bears: 0 }),
+})));
+
+// 组件中使用
+function BearCounter() {
+  const bears = useStore((state) => state.bears); // 仅 bears 变化时重渲染
+  return <h1>{bears} around here...</h1>;
+}
+\`\`\`
+
+---
+
+## 4. 构建优化
+
+### 4.1 Tree Shaking 配置
+
+\`\`\`javascript
+// vite.config.js
+export default {
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'ui-vendor': ['@mui/material'],
+        },
+      },
+    },
+  },
+}
+\`\`\`
+
+### 4.2 图片和资源优化
+
+\`\`\`jsx
+// 使用 WebP 格式
+<picture>
+  <source srcSet="image.webp" type="image/webp" />
+  <img src="image.jpg" alt="Fallback" loading="lazy" />
+</picture>
+
+// 响应式图片
+<img
+  srcSet="small.jpg 300w, medium.jpg 600w, large.jpg 900w"
+  sizes="(max-width: 600px) 300px, 900px"
+  src="fallback.jpg"
+/>
+\`\`\`
+
+---
+
+## 性能基准测试
+
+| 优化手段 | 渲染时间 | 内存占用 | 适用场景 |
+|---------|---------|---------|---------|
+| 无优化 | 120ms | 85MB | 简单应用 |
+| useMemo/useCallback | 80ms | 82MB | 复杂计算 |
+| React.memo | 45ms | 80MB | 大型列表 |
+| 虚拟列表 | 15ms | 45MB | 超大数据集 |
+| Code Splitting | 首屏 30ms | 按需加载 | 大型应用 |
+
+---
+
+*文档版本: v1.0 | 最后更新: 2024-01-14*`,
+    tags: ['react', 'performance', 'frontend'],
+    price: 8.0,
+    owner: 'Frontend_Wizard',
+    reputation: 1100,
+    sales: 423,
+    rating: 4.8,
+    createdAt: '2024-01-14',
+  },
+  {
+    id: '8',
+    title: '全球加密货币交易数据集（2020-2024）',
+    description: '包含 BTC、ETH 等主流币种的历史交易数据，适合量化分析和机器学习研究',
+    content: `# 全球加密货币交易数据集使用指南
+
+> 2020-2024 年完整历史数据，助力量化研究和机器学习
+
+---
+
+## 数据集概览
+
+### 数据规模
+
+| 交易对 | 1分钟数据 | 1小时数据 | 日线数据 |
+|-------|---------|---------|---------|
+| BTC/USDT | 210万条 | 3.5万条 | 1461条 |
+| ETH/USDT | 210万条 | 3.5万条 | 1461条 |
+| SOL/USDT | 150万条 | 2.5万条 | 1045条 |
+| BNB/USDT | 200万条 | 3.3万条 | 1387条 |
+| XRP/USDT | 200万条 | 3.3万条 | 1387条 |
+
+**总数据量**: 约 2.5GB（压缩后）
+
+---
+
+## 数据字段说明
+
+### OHLCV 基础字段
+
+\`\`\`
+timestamp: 时间戳（毫秒，UTC）
+open: 该周期开盘价
+high: 该周期最高价
+low: 该周期最低价
+close: 该周期收盘价
+volume: 交易量（基础货币）
+quote_volume: 计价货币交易量
+weighted_price: 成交量加权平均价
+trades_count: 成交笔数
+taker_buy_volume: 主动买入量
+taker_sell_volume: 主动卖出量
+\`\`\`
+
+---
+
+## 数据清洗脚本
+
+### Python 示例
+
+\`\`\`python
+import pandas as pd
+import numpy as np
+
+def load_and_clean_data(filepath):
+    """加载并清洗数据"""
+    df = pd.read_csv(filepath)
+
+    # 转换时间戳
+    df['datetime'] = pd.to_datetime(df['timestamp'], unit='ms')
+    df.set_index('datetime', inplace=True)
+
+    # 检查异常值
+    # 1. 价格跳跃超过 20%
+    price_changes = df['close'].pct_change().abs()
+    outliers = df[price_changes > 0.2]
+    print(f"发现 {len(outliers)} 个价格异常点")
+
+    # 2. 零交易量
+    zero_volume = df[df['volume'] == 0]
+    print(f"发现 {len(zero_volume)} 个零交易量记录")
+
+    # 插值填充缺失值
+    df = df.interpolate(method='time')
+
+    return df
+
+# 计算技术指标
+def add_indicators(df):
+    """添加常用技术指标"""
+    # 移动平均线
+    df['ma_7'] = df['close'].rolling(window=7).mean()
+    df['ma_30'] = df['close'].rolling(window=30).mean()
+
+    # RSI
+    delta = df['close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+    rs = gain / loss
+    df['rsi'] = 100 - (100 / (1 + rs))
+
+    # 波动率
+    df['volatility'] = df['close'].rolling(window=30).std()
+
+    return df
+\`\`\`
+
+---
+
+## 量化策略示例
+
+### 双均线策略
+
+\`\`\`python
+def dual_ma_strategy(df, short_window=7, long_window=30):
+    """双均线交易策略"""
+    df['short_ma'] = df['close'].rolling(short_window).mean()
+    df['long_ma'] = df['close'].rolling(long_window).mean()
+
+    # 生成信号
+    df['signal'] = 0
+    df.loc[df['short_ma'] > df['long_ma'], 'signal'] = 1  # 买入
+    df.loc[df['short_ma'] < df['long_ma'], 'signal'] = -1  # 卖出
+
+    # 计算收益
+    df['returns'] = df['close'].pct_change()
+    df['strategy_returns'] = df['signal'].shift(1) * df['returns']
+
+    # 累计收益
+    df['cumulative_returns'] = (1 + df['strategy_returns']).cumprod()
+
+    return df
+
+# 回测结果分析
+def backtest_report(df):
+    returns = df['strategy_returns'].dropna()
+
+    total_return = (df['cumulative_returns'].iloc[-1] - 1) * 100
+    sharpe_ratio = returns.mean() / returns.std() * np.sqrt(365)
+    max_drawdown = (df['cumulative_returns'] / df['cumulative_returns'].cummax() - 1).min() * 100
+
+    print(f"总收益率: {total_return:.2f}%")
+    print(f"夏普比率: {sharpe_ratio:.2f}")
+    print(f"最大回撤: {max_drawdown:.2f}%")
+\`\`\`
+
+---
+
+## 机器学习应用
+
+### 价格预测特征工程
+
+\`\`\`python
+def create_features(df):
+    """创建机器学习特征"""
+    features = pd.DataFrame(index=df.index)
+
+    # 价格特征
+    features['returns'] = df['close'].pct_change()
+    features['log_returns'] = np.log(df['close'] / df['close'].shift(1))
+
+    # 波动率特征
+    for window in [7, 14, 30]:
+        features[f'volatility_{window}'] = df['close'].rolling(window).std()
+
+    # 成交量特征
+    features['volume_ma'] = df['volume'].rolling(7).mean()
+    features['volume_ratio'] = df['volume'] / features['volume_ma']
+
+    # 价格位置
+    features['close_to_high'] = df['close'] / df['high'].rolling(30).max()
+    features['close_to_low'] = df['close'] / df['low'].rolling(30).min()
+
+    # 目标变量：未来1小时收益率
+    features['target'] = df['close'].shift(-1) / df['close'] - 1
+
+    return features.dropna()
+\`\`\`
+
+---
+
+*数据集版本: v2.1 | 最后更新: 2024-01-11*`,
+    tags: ['crypto', 'data', 'ml'],
+    price: 20.0,
+    owner: 'Data_Provider',
+    reputation: 900,
+    sales: 67,
+    rating: 4.5,
+    createdAt: '2024-01-11',
+  },
+  {
+    id: '9',
+    title: 'Docker 最佳实践 - 完整教程',
+    description: '从 Dockerfile 编写到多阶段构建，从单机部署到 Swarm 集群',
+    content: `# Docker 最佳实践完整教程
+
+> 构建生产级容器化应用的完整指南
+
+---
+
+## 1. Dockerfile 优化
+
+### 1.1 多阶段构建
+
+\`\`\`dockerfile
+# 构建阶段
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npm run build
+
+# 生产阶段
+FROM node:18-alpine AS production
+WORKDIR /app
+# 只复制构建产物
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY package.json ./
+EXPOSE 3000
+USER node
+CMD ["node", "dist/main.js"]
+\`\`\`
+
+**效果对比：**
+| 构建方式 | 镜像大小 | 层数 | 安全性 |
+|---------|---------|-----|--------|
+| 单阶段 | 1.2GB | 15 | 低 |
+| 多阶段 | 156MB | 8 | 高 |
+
+### 1.2 合理利用缓存
+
+\`\`\`dockerfile
+# ✅ 正确：依赖先复制
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+# ❌ 错误：每次代码变化都重新安装依赖
+COPY . .
+RUN npm install
+RUN npm run build
+\`\`\`
+
+---
+
+## 2. 基础镜像选择
+
+### 镜像对比
+
+| 镜像 | 大小 | 适用场景 | 注意点 |
+|-----|-----|---------|-------|
+| node:18 | 950MB | 开发环境 | 工具最全 |
+| node:18-slim | 180MB | 通用生产 | 平衡选择 |
+| node:18-alpine | 120MB | 极致精简 | 需安装依赖 |
+| distroless | 80MB | 安全优先 | 无 shell |
+
+### Alpine 使用技巧
+
+\`\`\`dockerfile
+FROM node:18-alpine
+# 安装必要的构建工具
+RUN apk add --no-cache python3 make g++
+# ...
+# 构建完成后清理
+RUN apk del python3 make g++
+\`\`\`
+
+---
+
+## 3. 安全最佳实践
+
+### 3.1 非 root 用户运行
+
+\`\`\`dockerfile
+# 创建非特权用户
+RUN addgroup -g 1001 -S nodejs && \\
+    adduser -S nodejs -u 1001
+
+# 设置文件权限
+COPY --chown=nodejs:nodejs . .
+
+# 切换用户
+USER nodejs
+\`\`\`
+
+### 3.2 镜像安全扫描
+
+\`\`\`bash
+# 使用 Trivy 扫描
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \\
+  aquasec/trivy image myapp:latest
+
+# 使用 Docker Scout
+docker scout cves myapp:latest
+\`\`\`
+
+---
+
+## 4. 容器运行时配置
+
+### 4.1 资源限制
+
+\`\`\`yaml
+# docker-compose.yml
+services:
+  app:
+    image: myapp:latest
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+\`\`\`
+
+### 4.2 日志管理
+
+\`\`\`yaml
+services:
+  app:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "production_status"
+        env: "OS,CUSTOMER"
+\`\`\`
+
+---
+
+## 5. Swarm 集群部署
+
+### 5.1 初始化集群
+
+\`\`\`bash
+# 初始化管理节点
+docker swarm init --advertise-addr 192.168.1.10
+
+# 获取加入令牌
+docker swarm join-token worker
+
+# 工作节点加入
+docker swarm join --token <token> 192.168.1.10:2377
+\`\`\`
+
+### 5.2 部署服务
+
+\`\`\`yaml
+# docker-stack.yml
+version: '3.8'
+services:
+  web:
+    image: myapp:latest
+    ports:
+      - "80:3000"
+    deploy:
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      placement:
+        constraints:
+          - node.role == worker
+    networks:
+      - frontend
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.storage == persistent
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend
+
+networks:
+  frontend:
+    driver: overlay
+  backend:
+    driver: overlay
+    internal: true
+
+volumes:
+  redis-data:
+\`\`\`
+
+---
+
+## 6. 监控方案
+
+### 6.1 Prometheus + Grafana
+
+\`\`\`yaml
+services:
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./dashboards:/etc/grafana/provisioning/dashboards
+\`\`\`
+
+---
+
+*文档版本: v1.2 | 最后更新: 2024-01-09*`,
+    tags: ['docker', 'devops', 'container'],
+    price: 6.0,
+    owner: 'DevOps_Guru',
+    reputation: 1600,
+    sales: 234,
+    rating: 4.7,
+    createdAt: '2024-01-09',
+  },
+  {
+    id: '10',
+    title: 'Python 异步编程实战 - 代码库',
+    description: '包含 asyncio、aiohttp、asyncpg 等库的实战示例，含完整测试用例',
+    content: `# Python 异步编程实战
+
+> 掌握 asyncio 生态，编写高性能 Python 应用
+
+---
+
+## 1. asyncio 基础
+
+### 1.1 事件循环原理
+
+\`\`\`python
+import asyncio
+
+# 获取事件循环
+loop = asyncio.get_event_loop()
+
+# 运行直到完成
+result = loop.run_until_complete(coroutine())
+
+# Python 3.7+ 推荐方式
+asyncio.run(main())
+\`\`\`
+
+### 1.2 Task 和 Future
+
+\`\`\`python
+async def main():
+    # 创建 Task
+    task = asyncio.create_task(fetch_data())
+
+    # 取消任务
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        print("任务被取消")
+
+    # 设置超时
+    try:
+        result = await asyncio.wait_for(slow_task(), timeout=5.0)
+    except asyncio.TimeoutError:
+        print("任务超时")
+
+# 批量创建任务
+async def fetch_all():
+    tasks = [fetch_url(url) for url in urls]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    return results
+\`\`\`
+
+---
+
+## 2. 网络编程
+
+### 2.1 aiohttp 客户端
+
+\`\`\`python
+import aiohttp
+import asyncio
+
+async def fetch_data(url: str) -> dict:
+    timeout = aiohttp.ClientTimeout(total=30)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with session.get(url) as response:
+            response.raise_for_status()
+            return await response.json()
+
+# 并发请求
+async def fetch_multiple(urls: list[str]):
+    async with aiohttp.ClientSession() as session:
+        tasks = [session.get(url) for url in urls]
+        responses = await asyncio.gather(*tasks)
+        return [await r.json() for r in responses]
+
+# 连接池配置
+connector = aiohttp.TCPConnector(
+    limit=100,           # 总连接数限制
+    limit_per_host=30,   # 单域名连接限制
+    enable_cleanup_closed=True,
+    force_close=True,
+)
+\`\`\`
+
+### 2.2 WebSocket 实现
+
+\`\`\`python
+# WebSocket 服务端
+from aiohttp import web
+
+async def websocket_handler(request):
+    ws = web.WebSocketResponse()
+    await ws.prepare(request)
+
+    async for msg in ws:
+        if msg.type == aiohttp.WSMsgType.TEXT:
+            if msg.data == 'close':
+                await ws.close()
+            else:
+                await ws.send_str(f"Echo: {msg.data}")
+        elif msg.type == aiohttp.WSMsgType.ERROR:
+            print(f"WebSocket error: {ws.exception()}")
+
+    return ws
+
+# WebSocket 客户端
+async def ws_client():
+    async with aiohttp.ClientSession() as session:
+        async with session.ws_connect('ws://localhost:8080/ws') as ws:
+            await ws.send_str('Hello')
+            async for msg in ws:
+                if msg.type == aiohttp.WSMsgType.TEXT:
+                    print(f"Received: {msg.data}")
+                elif msg.type == aiohttp.WSMsgType.CLOSED:
+                    break
+\`\`\`
+
+---
+
+## 3. 数据库操作
+
+### 3.1 asyncpg (PostgreSQL)
+
+\`\`\`python
+import asyncpg
+import asyncio
+
+async def init_db():
+    conn = await asyncpg.connect(
+        host='localhost',
+        database='mydb',
+        user='user',
+        password='pass'
+    )
+
+    # 执行查询
+    rows = await conn.fetch('SELECT * FROM users WHERE age > $1', 18)
+    for row in rows:
+        print(row['name'], row['email'])
+
+    # 事务
+    async with conn.transaction():
+        await conn.execute('INSERT INTO users(name) VALUES ($1)', 'Alice')
+        await conn.execute('INSERT INTO users(name) VALUES ($1)', 'Bob')
+
+    await conn.close()
+
+# 连接池
+async def pool_example():
+    pool = await asyncpg.create_pool(
+        'postgresql://user:pass@localhost/mydb',
+        min_size=10,
+        max_size=20
+    )
+
+    async with pool.acquire() as conn:
+        result = await conn.fetchval('SELECT count(*) FROM users')
+
+    await pool.close()
+\`\`\`
+
+### 3.2 事务和并发控制
+
+\`\`\`python
+async def transfer_funds(pool, from_id: int, to_id: int, amount: float):
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            # 悲观锁
+            from_balance = await conn.fetchval(
+                'SELECT balance FROM accounts WHERE id = $1 FOR UPDATE',
+                from_id
+            )
+
+            if from_balance < amount:
+                raise ValueError("Insufficient funds")
+
+            await conn.execute(
+                'UPDATE accounts SET balance = balance - $1 WHERE id = $2',
+                amount, from_id
+            )
+            await conn.execute(
+                'UPDATE accounts SET balance = balance + $1 WHERE id = $2',
+                amount, to_id
+            )
+\`\`\`
+
+---
+
+## 4. 高级主题
+
+### 4.1 异步上下文管理器
+
+\`\`\`python
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def managed_resource():
+    resource = await create_resource()
+    try:
+        yield resource
+    finally:
+        await resource.cleanup()
+
+# 使用
+async with managed_resource() as res:
+    await res.do_something()
+\`\`\`
+
+### 4.2 信号量控制并发
+
+\`\`\`python
+async def limited_requests(urls: list[str], max_concurrent: int = 10):
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def fetch_with_limit(url):
+        async with semaphore:
+            return await fetch_url(url)
+
+    tasks = [fetch_with_limit(url) for url in urls]
+    return await asyncio.gather(*tasks)
+\`\`\`
+
+### 4.3 性能测试
+
+\`\`\`python
+import time
+
+async def benchmark():
+    urls = ['https://api.example.com/data'] * 100
+
+    # 异步版本
+    start = time.time()
+    await fetch_all_async(urls)
+    async_time = time.time() - start
+
+    print(f"异步版本耗时: {async_time:.2f}s")
+    # 异步版本耗时: 2.5s
+    # 同步版本耗时: 45.0s
+\`\`\`
+
+---
+
+## 5. 测试
+
+### 5.1 pytest-asyncio
+
+\`\`\`python
+import pytest
+
+@pytest.mark.asyncio
+async def test_fetch_data():
+    result = await fetch_data('https://api.example.com/test')
+    assert result is not None
+    assert 'id' in result
+
+# 使用 fixture
+@pytest.fixture
+async def db_connection():
+    conn = await asyncpg.connect(DATABASE_URL)
+    yield conn
+    await conn.close()
+
+@pytest.mark.asyncio
+async def test_database(db_connection):
+    result = await db_connection.fetch('SELECT 1')
+    assert result[0][0] == 1
+\`\`\`
+
+---
+
+*代码库版本: v1.0 | 最后更新: 2024-01-07*`,
+    tags: ['python', 'async', 'backend'],
+    price: 4.5,
+    owner: 'Pythonista',
+    reputation: 1300,
+    sales: 378,
+    rating: 4.8,
+    createdAt: '2024-01-07',
+  },
+  {
+    id: '11',
+    title: 'Kubernetes 网络故障排查 - 视频教程',
+    description: '深入浅出讲解 K8s 网络原理，通过 10 个真实案例学习排查技巧',
+    content: `# Kubernetes 网络故障排查视频教程
+
+> 从原理到实战，掌握 K8s 网络问题排查的完整方法论
+
+---
+
+## 模块一：网络基础
+
+### 1.1 K8s 网络模型
+
+\`\`\`
+┌─────────────────────────────────────────────────────────────┐
+│                         Pod Network                          │
+│  ┌─────────┐    ┌─────────┐    ┌─────────┐                  │
+│  │ Pod A   │◄──►│ Pod B   │◄──►│ Pod C   │                  │
+│  │10.0.1.2 │    │10.0.1.3 │    │10.0.2.2 │                  │
+│  └─────────┘    └─────────┘    └─────────┘                  │
+│       ▲                              ▲                       │
+│       │         ┌─────────┐          │                       │
+│       └────────►│  Node 1 │◄─────────┘                       │
+│                 │192.168.1│                                  │
+│                 └─────────┘                                  │
+└─────────────────────────────────────────────────────────────┘
+\`\`\`
+
+**核心概念：**
+- 每个 Pod 有独立 IP
+- Pod 间直接通信，无需 NAT
+- CNI 插件负责网络实现
+
+### 1.2 数据包流动路径
+
+\`\`\`
+Pod A → veth pair → cni0 (网桥) → eth0 → 物理网络
+               ↓
+          iptables/IPVS
+               ↓
+          kube-proxy
+\`\`\`
+
+---
+
+## 模块二：CoreDNS 专题
+
+### 2.1 DNS 解析失败排查
+
+**常见症状：**
+\`\`\`bash
+# 应用报错
+getaddrinfo ENOTFOUND my-service
+
+# 排查步骤
+# 1. 检查 Pod 的 DNS 配置
+cat /etc/resolv.conf
+
+# 2. 测试 DNS 解析
+nslookup kubernetes.default
+nslookup my-service.default.svc.cluster.local
+
+# 3. 检查 CoreDNS Pod 状态
+kubectl get pods -n kube-system -l k8s-app=kube-dns
+
+# 4. 查看 CoreDNS 日志
+kubectl logs -n kube-system deployment/coredns
+\`\`\`
+
+### 2.2 CoreDNS 性能优化
+
+\`\`\`yaml
+# CoreDNS ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: kube-system
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+            lameduck 5s
+        }
+        ready
+        # 启用缓存
+        cache 30
+        # 使用转发而不是递归查询
+        forward . /etc/resolv.conf {
+            max_concurrent 1000
+        }
+        prometheus :9153
+        reload
+        loadbalance
+    }
+\`\`\`
+
+---
+
+## 模块三：Service 故障
+
+### 3.1 ClusterIP 不通排查
+
+**排查流程图：**
+
+\`\`\`
+Pod 无法访问 Service?
+│
+├─► kubectl get endpoints <svc-name>
+│   └─► 是否有 endpoints?
+│       ├─► 没有 → 检查 selector 是否匹配 Pod 标签
+│       └─► 有 → 继续
+│
+├─► kubectl get svc <svc-name> -o yaml
+│   └─► 检查 ports 配置是否正确
+│
+├─► 在 Pod 内测试连接
+│   └─► curl <svc-ip>:<port>
+│       ├─► 不通 → 检查 kube-proxy 和 iptables
+│       └─► 通 → 应用层问题
+│
+└─► 检查网络策略
+    └─► kubectl get networkpolicies
+\`\`\`
+
+### 3.2 NodePort 无法访问
+
+\`\`\`bash
+# 问题：NodePort 只能在部分节点访问
+
+# 1. 检查 kube-proxy 模式
+kubectl get configmap kube-proxy -n kube-system -o yaml | grep mode
+
+# 2. IPVS 模式检查
+ipvsadm -Ln | grep <node-port>
+
+# 3. iptables 模式检查
+iptables -t nat -L KUBE-NODEPORTS -n | grep <node-port>
+
+# 4. 检查外部访问
+# 确保 node-port 范围在 30000-32767
+# 检查云服务商安全组规则
+\`\`\`
+
+---
+
+## 模块四：Ingress 专题
+
+### 4.1 证书问题排查
+
+\`\`\`bash
+# 问题：HTTPS 访问报错
+
+# 1. 检查证书是否存在
+kubectl get secret -n ingress-nginx
+
+# 2. 检查证书内容
+kubectl get secret tls-secret -o yaml | \\
+  grep tls.crt | awk '{print $2}' | base64 -d | openssl x509 -text
+
+# 3. 检查 cert-manager
+kubectl get certificates
+kubectl get certificaterequests
+kubectl describe challenge
+
+# 4. 常见错误
+# - 域名不匹配
+# - 证书过期
+# - 中间证书缺失
+\`\`\`
+
+### 4.2 502/504 错误分析
+
+\`\`\`bash
+# 502 Bad Gateway：后端不可达
+# 排查：
+kubectl get endpoints <backend-service>
+kubectl logs <ingress-controller-pod>
+
+# 504 Gateway Timeout：后端响应超时
+# 排查：
+# 1. 应用性能问题
+# 2. 健康检查配置
+grep proxy-read-timeout /etc/nginx/nginx.conf
+
+# 3. 调整超时设置
+kubectl annotate ingress my-ingress \\
+  nginx.ingress.kubernetes.io/proxy-read-timeout="600"
+\`\`\`
+
+---
+
+## 模块五：高级网络
+
+### 5.1 Calico 网络策略
+
+\`\`\`yaml
+# 允许特定标签 Pod 通信
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-allow
+spec:
+  podSelector:
+    matchLabels:
+      app: api
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontend
+    ports:
+    - protocol: TCP
+      port: 8080
+\`\`\`
+
+### 5.2 tcpdump 实战技巧
+
+\`\`\`bash
+# 在容器内抓包
+kubectl debug -it <pod> --image=nicolaka/netshoot -- tcpdump -i any -w /tmp/capture.pcap
+
+# 常用过滤
+# 只抓取特定端口
+tcpdump -i any port 8080
+
+# 只抓取特定 IP
+tcpdump -i any host 10.0.1.5
+
+# 抓取 DNS 查询
+tcpdump -i any port 53
+
+# 分析数据包
+kubectl cp <pod>:/tmp/capture.pcap ./capture.pcap
+wireshark capture.pcap
+\`\`\`
+
+---
+
+## 排查工具清单
+
+| 工具 | 用途 | 命令 |
+|-----|-----|-----|
+| kubectl | 查看资源 | kubectl get/describe |
+| nslookup | DNS 测试 | nslookup <svc> |
+| curl | HTTP 测试 | curl -v <url> |
+| tcpdump | 抓包分析 | tcpdump -i any |
+| ipvsadm | IPVS 查看 | ipvsadm -Ln |
+| iptables | 规则查看 | iptables -t nat -L |
+| netshoot | 网络调试 | kubectl debug |
+
+---
+
+*教程版本: v1.0 | 最后更新: 2024-01-13*`,
+    tags: ['kubernetes', 'networking', 'video'],
+    price: 12.0,
+    owner: 'K8s_Expert',
+    reputation: 1900,
+    sales: 445,
+    rating: 4.9,
+    createdAt: '2024-01-13',
+  },
+  {
+    id: '12',
+    title: '技术领导力成长指南 - 音频课程',
+    description: '从技术专家到团队 Leader 的进阶之路，分享管理经验和软技能',
+    content: `# 技术领导力成长指南
+
+> 从技术专家到团队 Leader 的完整进阶手册
+
+---
+
+## 第一部分：角色转变
+
+### 1. 工程师 vs 管理者：思维模式的转变
+
+**核心差异：**
+
+| 维度 | 工程师思维 | 管理者思维 |
+|-----|-----------|-----------|
+| 成功标准 | 代码质量、技术方案 | 团队产出、业务目标 |
+| 时间分配 | 80% 编码 | 30% 编码，70% 管理 |
+| 价值创造 | 个人产出 | 通过他人产出 |
+| 关注重点 | 怎么做（How） | 做什么、为什么做（What/Why） |
+
+**转变关键：**
+1. 从"我来做"到"我们一起做"
+2. 从追求完美到追求合适
+3. 从解决技术问题到解决人的问题
+
+---
+
+## 第二部分：团队建设
+
+### 2. 如何制定团队目标
+
+**OKR 制定原则：**
+
+\`\`\`
+Objective: 提升系统稳定性
+├── KR1: 将 P0 故障减少 50%（从 4次/月 → 2次/月）
+├── KR2: 平均故障恢复时间（MTTR）缩短至 30 分钟内
+└── KR3: 核心服务可用性达到 99.99%
+\`\`\`
+
+**目标设定技巧：**
+- 自上而下对齐公司战略
+- 自下而上收集团队想法
+- 确保目标可衡量、有时限
+- 保持 3-5 个关键结果，避免过多
+
+### 3. 绩效评估与反馈
+
+**持续反馈模型：**
+
+\`\`\`
+每周 1:1 会议结构：
+├── 10分钟 - 对方分享（工作、困惑、成长）
+├── 10分钟 - 你的反馈（具体行为 + 影响 + 建议）
+└── 10分钟 - 下阶段目标对齐
+\`\`\`
+
+**反馈原则（SBI 模型）：**
+- **S**ituation：描述具体情境
+- **B**ehavior：描述观察到的行为
+- **I**mpact：说明产生的影响
+
+---
+
+## 第三部分：技术决策
+
+### 4. 架构决策的方法论
+
+**决策框架（ADR）：**
+
+\`\`\`
+# 架构决策记录
+
+## 背景
+我们需要选择一个消息队列系统来处理异步任务
+
+## 考虑的方案
+1. RabbitMQ
+2. Apache Kafka
+3. AWS SQS
+
+## 决策
+选择 Apache Kafka
+
+## 原因
+- 高吞吐量（100K+ msg/s）
+- 持久化保证
+- 团队已有经验
+
+## 影响
+- 需要部署和运维 Kafka 集群
+- 团队需要学习 Kafka API
+- 需要开发监控方案
+\`\`\`
+
+### 5. 技术债管理策略
+
+**技术债分类：**
+
+| 类型 | 示例 | 处理优先级 |
+|-----|-----|-----------|
+| 代码债 | 重复代码、命名混乱 | 高 |
+| 架构债 | 耦合严重、扩展性差 | 高 |
+| 测试债 | 缺少自动化测试 | 中 |
+| 文档债 | 文档过时 | 低 |
+
+**技术债还款计划：**
+- 每迭代预留 20% 时间处理技术债
+- 重构高复杂度模块
+- 补充核心功能测试
+- 更新架构文档
+- 升级依赖版本
+
+---
+
+## 第四部分：领导力实践
+
+### 6. 激励团队的方法
+
+**内在激励因素：**
+1. **自主权**：让工程师参与技术选型决策
+2. **精通感**：提供学习新技术的机会
+3. **使命感**：连接工作与业务价值
+
+**具体实践：**
+- 技术分享会（每周一次）
+- 黑客马拉松（季度一次）
+- 技术大会参访（年度预算）
+- 内部轮岗机会
+
+### 7. 危机处理案例
+
+**线上故障处理流程：**
+
+\`\`\`
+第一阶段：止损（0-5分钟）
+├── 发现告警
+├── 评估影响范围
+└── 决定是否回滚
+
+第二阶段：定位（5-15分钟）
+├── 召集相关人员
+├── 查看日志和监控
+└── 确定根因
+
+第三阶段：修复（15-30分钟）
+├── 实施修复方案
+├── 验证修复效果
+└── 恢复服务
+
+第四阶段：复盘（24小时内）
+├── 整理时间线
+├── 分析根因
+├── 制定改进措施
+└── 分享经验
+\`\`\`
+
+---
+
+## 推荐书单
+
+| 书名 | 作者 | 适用场景 |
+|-----|-----|---------|
+| 《成为技术领导者》 | Gerald Weinberg | 角色认知 |
+| 《人月神话》 | Fred Brooks | 项目管理 |
+| 《领导梯队》 | Ram Charan | 职业发展 |
+| 《黑客与画家》 | Paul Graham | 技术文化 |
+| 《高效能人士的七个习惯》 | Stephen Covey | 自我管理 |
+
+---
+
+*课程版本: v1.0 | 最后更新: 2024-01-06*`,
+    tags: ['leadership', 'career', 'management'],
+    price: 5.0,
+    owner: 'Tech_Leader',
+    reputation: 2500,
+    sales: 334,
+    rating: 4.8,
+    createdAt: '2024-01-06',
+  },
 ]
 
 // 获取知识内容
