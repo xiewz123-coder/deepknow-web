@@ -2,12 +2,58 @@
 
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { useState } from 'react'
 import { getAgentById } from '@/data/agents'
 
 export default function AgentDetailPage() {
   const params = useParams()
   const agentId = params.id as string
   const agent = getAgentById(agentId)
+
+  // 交互状态
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [showResult, setShowResult] = useState<'success' | 'error' | null>(null)
+  const [resultMessage, setResultMessage] = useState('')
+
+  // 处理立即调用按钮点击
+  const handleCallAgent = () => {
+    if (!agent) return
+
+    // 检查代理状态
+    if (agent.status === 'inactive') {
+      setShowResult('error')
+      setResultMessage('该代理当前离线，无法调用')
+      setTimeout(() => setShowResult(null), 3000)
+      return
+    }
+
+    if (agent.status === 'busy') {
+      setShowResult('error')
+      setResultMessage('该代理当前繁忙，请稍后重试')
+      setTimeout(() => setShowResult(null), 3000)
+      return
+    }
+
+    // 显示确认弹窗
+    setShowConfirmModal(true)
+  }
+
+  // 确认调用
+  const confirmCall = async () => {
+    setShowConfirmModal(false)
+    setIsLoading(true)
+
+    // 模拟调用过程
+    await new Promise(resolve => setTimeout(resolve, 2000))
+
+    setIsLoading(false)
+    setShowResult('success')
+    setResultMessage('调用请求已发送！代理将很快响应。')
+
+    // 3秒后隐藏结果
+    setTimeout(() => setShowResult(null), 3000)
+  }
 
   if (!agent) {
     return (
@@ -118,8 +164,22 @@ export default function AgentDetailPage() {
 
             {/* Actions */}
             <div className="flex flex-col gap-3">
-              <button className="px-6 py-3 bg-white text-indigo-700 font-semibold rounded-xl hover:bg-indigo-50 transition-colors shadow-lg">
-                立即调用
+              <button
+                onClick={handleCallAgent}
+                disabled={isLoading}
+                className="px-6 py-3 bg-white text-indigo-700 font-semibold rounded-xl hover:bg-indigo-50 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    调用中...
+                  </>
+                ) : (
+                  '立即调用'
+                )}
               </button>
               <p className="text-center text-indigo-200 text-sm">
                 {agent.pricing.basePrice === 0
@@ -387,6 +447,81 @@ export default function AgentDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* 确认弹窗 */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center">
+                <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 mb-2">确认调用代理</h3>
+              <p className="text-slate-600">
+                您即将调用 <span className="font-semibold text-slate-900">{agent.name}</span>
+              </p>
+            </div>
+
+            <div className="bg-slate-50 rounded-xl p-4 mb-6 space-y-3">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">调用费用</span>
+                <span className="font-semibold text-slate-900">
+                  {agent.pricing.basePrice === 0 ? '免费' : `${agent.pricing.basePrice} ${agent.pricing.currency}`}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">预计响应时间</span>
+                <span className="font-semibold text-slate-900">
+                  {agent.avgResponseTime < 1000 ? `${agent.avgResponseTime}ms` : `${(agent.avgResponseTime / 1000).toFixed(1)}s`}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">认证方式</span>
+                <span className="font-semibold text-slate-900">
+                  {agent.authentication.schemes.includes('none') ? '无需认证' : agent.authentication.schemes[0].toUpperCase()}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 px-4 py-2 border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmCall}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white font-medium rounded-xl hover:bg-indigo-700 transition-colors"
+              >
+                确认调用
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 结果提示 Toast */}
+      {showResult && (
+        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-2 duration-200`}>
+          <div className={`flex items-center gap-3 px-6 py-3 rounded-xl shadow-lg ${
+            showResult === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+          }`}>
+            {showResult === 'success' ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            )}
+            <span className="font-medium">{resultMessage}</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

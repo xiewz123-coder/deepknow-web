@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import type { AgentCard as AgentCardType } from '@/types'
 
 interface AgentCardProps {
@@ -8,6 +9,10 @@ interface AgentCardProps {
 }
 
 export default function AgentCard({ agent }: AgentCardProps) {
+  const [isCalling, setIsCalling] = useState(false)
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error'>('success')
   // 格式化响应时间显示
   const formatResponseTime = (ms: number) => {
     if (ms < 1000) return `${ms}ms`
@@ -35,6 +40,39 @@ export default function AgentCard({ agent }: AgentCardProps) {
   }
 
   // 星级评分显示
+  // 快速调用处理
+  const handleQuickCall = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    // 检查代理状态
+    if (agent.status === 'inactive') {
+      setToastType('error')
+      setToastMessage('该代理当前离线')
+      setShowToast(true)
+      setTimeout(() => setShowToast(false), 2000)
+      return
+    }
+
+    if (agent.status === 'busy') {
+      setToastType('error')
+      setToastMessage('该代理当前繁忙，请稍后重试')
+      setShowToast(true)
+      setTimeout(() => setShowToast(false), 2000)
+      return
+    }
+
+    // 开始调用
+    setIsCalling(true)
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    setIsCalling(false)
+
+    setToastType('success')
+    setToastMessage(`已发送调用请求给 ${agent.name}`)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 2000)
+  }
+
   const renderStars = (rating: number) => {
     return (
       <div className="flex items-center gap-0.5">
@@ -56,7 +94,7 @@ export default function AgentCard({ agent }: AgentCardProps) {
   }
 
   return (
-    <div className="group bg-white border border-slate-200 rounded-xl p-5 hover:shadow-lg hover:border-indigo-200 transition-all duration-200">
+    <div className="group relative bg-white border border-slate-200 rounded-xl p-5 hover:shadow-lg hover:border-indigo-200 transition-all duration-200">
       {/* 头部：头像、名称、状态 */}
       <div className="flex items-start gap-4 mb-4">
         <div className="relative">
@@ -160,12 +198,47 @@ export default function AgentCard({ agent }: AgentCardProps) {
         <div className="flex gap-2">
           <Link
             href={`/agents/${agent.id}`}
-            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+            className="px-3 py-2 border border-slate-200 text-slate-700 text-sm font-medium rounded-lg hover:bg-slate-50 transition-colors"
           >
-            查看详情
+            详情
           </Link>
+          <button
+            onClick={handleQuickCall}
+            disabled={isCalling}
+            className="px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+          >
+            {isCalling ? (
+              <>
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                调用中
+              </>
+            ) : (
+              '快速调用'
+            )}
+          </button>
         </div>
       </div>
+
+      {/* Toast 提示 */}
+      {showToast && (
+        <div className={`absolute top-4 left-4 right-4 z-10 flex items-center gap-2 px-4 py-2 rounded-lg shadow-lg animate-in fade-in slide-in-from-top-2 ${
+          toastType === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+        }`}>
+          {toastType === 'success' ? (
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          )}
+          <span className="text-sm font-medium">{toastMessage}</span>
+        </div>
+      )}
     </div>
   )
 }
