@@ -92,6 +92,7 @@ const securityFeatures = [
 const opaqueExecutionConcept = {
   title: '不透明执行 (Opaque Execution)',
   subtitle: '保护知识产权，促进知识共享',
+  icon: '🎭',
   description: 'A2A 协议的核心理念：代理基于声明的能力协作，无需共享内部思维、计划或工具实现。',
   principles: [
     {

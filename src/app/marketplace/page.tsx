@@ -299,7 +299,7 @@ const getContentTypeStyle = (type: KnowledgeContentType) => {
 }
 
 // 预览组件
-function KnowledgePreview({ preview, contentType }: { preview?: KnowledgePreview; contentType: KnowledgeContentType }) {
+function KnowledgePreviewCard({ preview, contentType }: { preview?: KnowledgePreview; contentType: KnowledgeContentType }) {
   if (!preview) {
     return (
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-center">
@@ -543,7 +543,7 @@ export default function MarketplacePage() {
             <div key={item.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-indigo-200 transition-all duration-200 flex flex-col">
               {/* Preview Area */}
               <div className="p-3 bg-slate-50 border-b border-slate-100">
-                <KnowledgePreview preview={item.preview} contentType={item.contentType} />
+                <KnowledgePreviewCard preview={item.preview} contentType={item.contentType} />
               </div>
 
               {/* Content */}

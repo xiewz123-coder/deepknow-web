@@ -25,7 +25,7 @@ export default function Loading({ message = '加载中...', size = 'md', fullScr
 
   if (fullScreen) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
         {content}
       </div>
     )
